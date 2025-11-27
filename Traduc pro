@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Traducteur Vocal</title>
+    <style>
+        body {
+            background: #111;
+            color: white;
+            font-family: Arial;
+            text-align: center;
+            padding: 30px;
+        }
+        select, button {
+            font-size: 18px;
+            padding: 10px;
+            margin-top: 15px;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 22px;
+            color: #0f0;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🎤 Traducteur Vocal Automatique</h1>
+
+    <p>Choisis la langue dans laquelle tu veux que je parle :</p>
+
+    <select id="targetLang">
+        <option value="ja-JP">Japonais 🇯🇵</option>
+        <option value="en-US">Anglais 🇺🇸</option>
+        <option value="ar">Arabe 🇸🇦</option>
+        <option value="es">Espagnol 🇪🇸</option>
+        <option value="fr-FR">Français 🇫🇷</option>
+    </select>
+
+    <br><br>
+
+    <button onclick="startRecording()">🎙️ Parler</button>
+
+    <p id="result"></p>
+
+<script>
+    // --- 1. Reconnaissance vocale ---
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = "fr-FR";
+    recognition.interimResults = false;
+
+    function startRecording() {
+        recognition.start();
+        document.getElementById("result").innerHTML = "Écoute...";
+    }
+
+    recognition.onresult = function(event) {
+        const spokenText = event.results[0][0].transcript;
+        document.getElementById("result").innerHTML = "Tu as dit : " + spokenText;
+
+        translateText(spokenText);
+    };
+
+    // --- 2. Traduction (API gratuite via MyMemory) ---
+    function translateText(text) {
+        let target = document.getElementById("targetLang").value;
+        let shortLang = target.split("-")[0]; // ex: ja-JP → ja
+
+        let url = "https://api.mymemory.translated.net/get?q=" + 
+                  encodeURIComponent(text) + 
+                  "&langpair=fr|" + shortLang;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                let translated = data.responseData.translatedText;
+                document.getElementById("result").innerHTML =
+                    "Traduction : " + translated;
+
+                speakText(translated, target);
+            });
+    }
+
+    // --- 3. Synthèse vocale ---
+    function speakText(text, lang) {
+        let msg = new SpeechSynthesisUtterance();
+        msg.text = text;
+        msg.lang = lang;
+        speechSynthesis.speak(msg);
+    }
+</script>
+
+</body>
+</html>
